@@ -1,0 +1,29 @@
+# IDE
+.idea/
+*.iml
+
+# Vim
+*.*.swp
+*.*.swo
+
+# Build
+target
+dist
+**/*.rs.bk
+node_modules
+.DS_Store
+yarn-error.log
+.vscode/settings.json
+
+# tests/js/test.js is used for testing changes locally
+tests/js/test.js
+.boa_history
+
+# Profiling
+*.string_data
+*.string_index
+*.events
+chrome_profiler.json
+
+# Logs
+*.log
