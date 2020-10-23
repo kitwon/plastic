@@ -10,3 +10,8 @@ edition = "2018"
 
 [dependencies]
 gc = { version = "0.3.6", features = ["derive"] }
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "plastic"
+path = "src/lib/lib.rs"
