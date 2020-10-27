@@ -1,17 +1,4 @@
-[package]
-name = "plastic"
-version = "0.1.0"
-authors = ["kitwang <kitwang.c@gmail.com>"]
-keywords = ["javascript", "compiler", "lexer", "parser", "js"]
-license = "MIT"
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-gc = { version = "0.3.6", features = ["derive"] }
-
-[lib]
-crate-type = ["cdylib", "lib"]
-name = "plastic"
-path = "src/lib/lib.rs"
+[workspace]
+members = [
+  "plastic"
+]

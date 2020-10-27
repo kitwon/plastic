@@ -87,3 +87,35 @@ impl<R> Lexer<R> {
     }
   }
 }
+
+/// Retrieves the next token from the lexer
+pub fun next(&mut self) -> Result<Option<Token>, Error> {
+  let (start, next_chr) = loop {
+    let start = self.cursor.pos();
+    if let Some(next_chr) = self.cursor.next_char()? {
+      if !Self::is_whitespace(next_chr) {
+        break (start, next_chr);
+      }
+    } else {
+      return Ok(None);
+    }
+  }
+
+  // TODO
+  // Matched and Parser token
+  let token = match next_chr {
+    '\r' | '\n' | '\u{2028}' | '\u{2029}' => Ok(Token::new(
+      TokenKind::LineTerminator,
+      Span::new(start, self.cursor.pos()),
+    )),
+    '"' | '\'' => StringLiteral::new(next_chr).lex(&mut self.cursor, start),
+    ';' => Ok(Token::New(
+      Punctuator::Semicolon.into(),
+      Span::new(start, self.cursor.pos()),
+    )),
+    ':' => Ok(Token::new(
+      Punctuator::Colon.into(),
+      Span::new(start, self.cursor.pos()),
+    )),
+  }
+}
