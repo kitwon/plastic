@@ -1,8 +1,6 @@
-use super::{Tokenizer, Cursor, Error, Token};
+use super::{Cursor, Error, Token, Tokenizer};
+use crate::syntax::ast::{Position, Punctuator, Span};
 use std::io::Read;
-use crate::syntax::{
-  ast::{Position, Span, Punctuator}
-};
 
 macro_rules! vop {
   ($cursor: ident, $assign_op: expr, $op: expr) => {
@@ -31,11 +29,21 @@ macro_rules! vop {
       })+,
       _ => $op
     }
-  })
+  });
+  ($cursor:ident, $op:expr, {$($case:pat => $block:expr),+}) => {
+    match $cursor.peek().ok_or_else(|| Error::syntax("could not preview next value", $cursor.pos()))? {
+        $($case => {
+            $cursor.next_char()?;
+            $cursor.next_column();
+            $block
+        })+,
+        _ => $op
+    }
+  }
 }
 
 macro_rules! op {
-  ($crusor: ident, $start_pos: expr, $assign_op: expr, $op: expr) => {
+  ($cursor: ident, $start_pos: expr, $assign_op: expr, $op: expr) => {
     Ok(Token::new(
       vop!($cursor, $assign_op, $op)?.into(),
       Span::new($start_pos, $cursor.pos()),
@@ -70,13 +78,67 @@ impl Operator {
 
 impl<R> Tokenizer<R> for Operator {
   fn lex(&mut self, cursor: &mut Cursor<R>, start_pos: Position) -> Result<Token, Error>
-    where
-      R: Read,
+  where
+    R: Read,
   {
     match self.init {
       '*' => op!(cursor, start_pos, Ok(Punctuator::AssignMul), Ok(Punctuator::Mul), {
         Some('*') => vop!(cursor, Ok(Punctuator::AssignPow), Ok(Punctuator::Exp))
-      })
+      }),
+      '+' => op!(cursor, start_pos, Ok(Punctuator::AssignAdd), Ok(Punctuator::Add), {
+          Some('+') => Ok(Punctuator::Inc)
+      }),
+      '-' => op!(cursor, start_pos, Ok(Punctuator::AssignSub), Ok(Punctuator::Sub), {
+          Some('-') => {
+              Ok(Punctuator::Dec)
+          }
+      }),
+      '%' => op!(
+        cursor,
+        start_pos,
+        Ok(Punctuator::AssignMod),
+        Ok(Punctuator::Mod)
+      ),
+      '|' => op!(cursor, start_pos, Ok(Punctuator::AssignOr), Ok(Punctuator::Or), {
+          Some('|') => Ok(Punctuator::BoolOr)
+      }),
+      '&' => op!(cursor, start_pos, Ok(Punctuator::AssignAnd), Ok(Punctuator::And), {
+          Some('&') => Ok(Punctuator::BoolAnd)
+      }),
+      '^' => op!(
+        cursor,
+        start_pos,
+        Ok(Punctuator::AssignXor),
+        Ok(Punctuator::Xor)
+      ),
+      '=' => op!(cursor, start_pos, if cursor.next_is('=')? {
+          Ok(Punctuator::StrictEq)
+      } else {
+          Ok(Punctuator::Eq)
+      }, Ok(Punctuator::Assign), {
+          Some('>') => {
+              Ok(Punctuator::Arrow)
+          }
+      }),
+      '<' => op!(cursor, start_pos, Ok(Punctuator::LessThanOrEq), Ok(Punctuator::LessThan), {
+          Some('<') => vop!(cursor, Ok(Punctuator::AssignLeftSh), Ok(Punctuator::LeftSh))
+      }),
+      '>' => op!(cursor, start_pos, Ok(Punctuator::GreaterThanOrEq), Ok(Punctuator::GreaterThan), {
+          Some('>') => vop!(cursor, Ok(Punctuator::AssignRightSh), Ok(Punctuator::RightSh), {
+              Some('>') => vop!(cursor, Ok(Punctuator::AssignURightSh), Ok(Punctuator::URightSh))
+          })
+      }),
+      '!' => op!(
+        cursor,
+        start_pos,
+        vop!(cursor, Ok(Punctuator::StrictNotEq), Ok(Punctuator::NotEq)),
+        Ok(Punctuator::Not)
+      ),
+      '~' => Ok(Token::new(
+        Punctuator::Neg.into(),
+        Span::new(start_pos, cursor.pos()),
+      )),
+      op => unimplemented!("operator {}", op),
     }
   }
 }

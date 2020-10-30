@@ -23,13 +23,13 @@ use std::io::Read;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum InputElement {
   Div,
-  RegExp,
+  // RegExp,
   TemplateTail
 }
 
 impl Default for InputElement {
   fn default() -> Self {
-    InputElement::RegExp
+    InputElement::Div
   }
 }
 
@@ -179,10 +179,6 @@ impl<R> Lexer<R> {
       )),
       ']' => Ok(Token::new(
         Punctuator::CloseBracket.into(),
-        Span::new(start, self.cursor.pos())
-      )),
-      '?' => Ok(Token::new(
-        Punctuator::Question.into(),
         Span::new(start, self.cursor.pos())
       )),
       '?' => Ok(Token::new(

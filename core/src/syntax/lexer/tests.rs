@@ -17,7 +17,7 @@ fn expect_tokens<R>(lexer: &mut Lexer<R>, expected: &[TokenKind])
 
 #[test]
 fn check_single_line_comment() {
-  let s = "var \n //This is a comment\ntrue";
+  let s = "var \n//This is a comment\ntrue";
   let mut lexer = Lexer::new(s.as_bytes());
 
   let expected = [
