@@ -5,6 +5,7 @@ use crate::{syntax::ast::Position};
 use std::io::{self, Bytes, Read, Error};
 
 /// Cursor over the source code.
+#[derive(Debug)]
 pub(super) struct Cursor<R> {
   iter: InnerIter<R>,
   pos: Position,
@@ -42,6 +43,11 @@ impl<R> Cursor<R>
       iter: InnerIter::new(inner.bytes()),
       pos: Position::new(1, 1),
     }
+  }
+
+  #[inline]
+  pub(super) fn fill_bytes(&mut self, buf: &mut [u8]) -> io::Result<()> {
+    self.iter.fill_bytes(buf)
   }
 
   #[inline]
@@ -105,6 +111,7 @@ impl<R> Cursor<R>
   }
 }
 
+#[derive(Debug)]
 struct InnerIter<R> {
   iter: Bytes<R>,
   peeked_char: Option<Option<char>>,

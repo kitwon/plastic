@@ -1,7 +1,27 @@
-use std::fmt::{Display, Error, Formatter};
+//! This module implements the `Punctuator`, which represents all punctuators used in JavaScript
+//!
+//! More information:
+//!  - [ECMAScript Reference][spec]
+//!
+//! [spec]: https://tc39.es/ecma262/#prod-Punctuator
 
-#[derive(PartialEq, Clone, Debug)]
-/// Punctuation
+use crate::syntax::ast::operator::{BinOp, CompOp, LogOp, NumOp};
+use std::{
+  convert::TryInto,
+  fmt::{Display, Error, Formatter},
+};
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+/// The Punctuator enum describes all of the punctuators used in JavaScript.
+///
+/// More information:
+///  - [ECMAScript Reference][spec]
+///
+/// [spec]: https://tc39.es/ecma262/#prod-Punctuator
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub enum Punctuator {
   /// `+`
   Add,
@@ -88,7 +108,7 @@ pub enum Punctuator {
   /// `|`
   Or,
   /// `**`
-  Pow,
+  Exp,
   /// `?`
   Question,
   /// `>>`
@@ -108,64 +128,119 @@ pub enum Punctuator {
   /// `^`
   Xor,
 }
+
+impl Punctuator {
+  /// Attempts to convert a punctuator (`+`, `=`...) to a Binary Operator
+  ///
+  /// If there is no match, `None` will be returned.
+  pub fn as_binop(self) -> Option<BinOp> {
+    match self {
+      // Self::AssignAdd => Some(BinOp::Assign(AssignOp::Add)),
+      // Self::AssignAnd => Some(BinOp::Assign(AssignOp::And)),
+      // Self::AssignDiv => Some(BinOp::Assign(AssignOp::Div)),
+      // Self::AssignLeftSh => Some(BinOp::Assign(AssignOp::Shl)),
+      // Self::AssignMod => Some(BinOp::Assign(AssignOp::Mod)),
+      // Self::AssignMul => Some(BinOp::Assign(AssignOp::Mul)),
+      // Self::AssignOr => Some(BinOp::Assign(AssignOp::Or)),
+      // Self::AssignPow => Some(BinOp::Assign(AssignOp::Exp)),
+      // Self::AssignRightSh => Some(BinOp::Assign(AssignOp::Shr)),
+      // Self::AssignSub => Some(BinOp::Assign(AssignOp::Sub)),
+      // Self::AssignURightSh => Some(BinOp::Assign(AssignOp::Ushr)),
+      // Self::AssignXor => Some(BinOp::Assign(AssignOp::Xor)),
+      Self::Add => Some(BinOp::Num(NumOp::Add)),
+      Self::Sub => Some(BinOp::Num(NumOp::Sub)),
+      Self::Mul => Some(BinOp::Num(NumOp::Mul)),
+      Self::Div => Some(BinOp::Num(NumOp::Div)),
+      Self::Mod => Some(BinOp::Num(NumOp::Mod)),
+      // Self::And => Some(BinOp::Bit(BitOp::And)),
+      // Self::Or => Some(BinOp::Bit(BitOp::Or)),
+      // Self::Xor => Some(BinOp::Bit(BitOp::Xor)),
+      Self::BoolAnd => Some(BinOp::Log(LogOp::And)),
+      Self::BoolOr => Some(BinOp::Log(LogOp::Or)),
+      Self::Eq => Some(BinOp::Comp(CompOp::Equal)),
+      Self::NotEq => Some(BinOp::Comp(CompOp::NotEqual)),
+      Self::StrictEq => Some(BinOp::Comp(CompOp::StrictEqual)),
+      Self::StrictNotEq => Some(BinOp::Comp(CompOp::StrictNotEqual)),
+      Self::LessThan => Some(BinOp::Comp(CompOp::LessThan)),
+      Self::GreaterThan => Some(BinOp::Comp(CompOp::GreaterThan)),
+      Self::GreaterThanOrEq => Some(BinOp::Comp(CompOp::GreaterThanOrEqual)),
+      Self::LessThanOrEq => Some(BinOp::Comp(CompOp::LessThanOrEqual)),
+      // Self::LeftSh => Some(BinOp::Bit(BitOp::Shl)),
+      // Self::RightSh => Some(BinOp::Bit(BitOp::Shr)),
+      // Self::URightSh => Some(BinOp::Bit(BitOp::UShr)),
+      Self::Comma => Some(BinOp::Comma),
+      _ => None,
+    }
+  }
+}
+
+impl TryInto<BinOp> for Punctuator {
+  type Error = String;
+  fn try_into(self) -> Result<BinOp, Self::Error> {
+    self
+      .as_binop()
+      .ok_or_else(|| format!("No binary operation for {}", self))
+  }
+}
+
 impl Display for Punctuator {
-  fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+  fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
     write!(
       f,
       "{}",
       match self {
-        Punctuator::Add => "+",
-        Punctuator::And => "&",
-        Punctuator::Arrow => "=>",
-        Punctuator::Assign => "=",
-        Punctuator::AssignAdd => "+=",
-        Punctuator::AssignAnd => "&=",
-        Punctuator::AssignDiv => "/=",
-        Punctuator::AssignLeftSh => "<<=",
-        Punctuator::AssignMod => "%=",
-        Punctuator::AssignMul => "*=",
-        Punctuator::AssignOr => "|=",
-        Punctuator::AssignPow => "**=",
-        Punctuator::AssignRightSh => ">>=",
-        Punctuator::AssignSub => "-=",
-        Punctuator::AssignURightSh => ">>>=",
-        Punctuator::AssignXor => "^=",
-        Punctuator::BoolAnd => "&&",
-        Punctuator::BoolOr => "||",
-        Punctuator::CloseBlock => "}",
-        Punctuator::CloseBracket => "]",
-        Punctuator::CloseParen => ")",
-        Punctuator::Colon => ":",
-        Punctuator::Comma => ",",
-        Punctuator::Dec => "--",
-        Punctuator::Div => "/",
-        Punctuator::Dot => ".",
-        Punctuator::Eq => "==",
-        Punctuator::GreaterThan => ">",
-        Punctuator::GreaterThanOrEq => ">=",
-        Punctuator::Inc => "++",
-        Punctuator::LeftSh => "<<",
-        Punctuator::LessThan => "<",
-        Punctuator::LessThanOrEq => "<=",
-        Punctuator::Mod => "%",
-        Punctuator::Mul => "*",
-        Punctuator::Neg => "~",
-        Punctuator::Not => "!",
-        Punctuator::NotEq => "!=",
-        Punctuator::OpenBlock => "{",
-        Punctuator::OpenBracket => "[",
-        Punctuator::OpenParen => "(",
-        Punctuator::Or => "|",
-        Punctuator::Pow => "**",
-        Punctuator::Question => "?",
-        Punctuator::RightSh => ">>",
-        Punctuator::Semicolon => ";",
-        Punctuator::Spread => "...",
-        Punctuator::StrictEq => "===",
-        Punctuator::StrictNotEq => "!==",
-        Punctuator::Sub => "-",
-        Punctuator::URightSh => ">>>",
-        Punctuator::Xor => "^",
+        Self::Add => "+",
+        Self::And => "&",
+        Self::Arrow => "=>",
+        Self::Assign => "=",
+        Self::AssignAdd => "+=",
+        Self::AssignAnd => "&=",
+        Self::AssignDiv => "/=",
+        Self::AssignLeftSh => "<<=",
+        Self::AssignMod => "%=",
+        Self::AssignMul => "*=",
+        Self::AssignOr => "|=",
+        Self::AssignPow => "**=",
+        Self::AssignRightSh => ">>=",
+        Self::AssignSub => "-=",
+        Self::AssignURightSh => ">>>=",
+        Self::AssignXor => "^=",
+        Self::BoolAnd => "&&",
+        Self::BoolOr => "||",
+        Self::CloseBlock => "}",
+        Self::CloseBracket => "]",
+        Self::CloseParen => ")",
+        Self::Colon => ":",
+        Self::Comma => ",",
+        Self::Dec => "--",
+        Self::Div => "/",
+        Self::Dot => ".",
+        Self::Eq => "==",
+        Self::GreaterThan => ">",
+        Self::GreaterThanOrEq => ">=",
+        Self::Inc => "++",
+        Self::LeftSh => "<<",
+        Self::LessThan => "<",
+        Self::LessThanOrEq => "<=",
+        Self::Mod => "%",
+        Self::Mul => "*",
+        Self::Neg => "~",
+        Self::Not => "!",
+        Self::NotEq => "!=",
+        Self::OpenBlock => "{",
+        Self::OpenBracket => "[",
+        Self::OpenParen => "(",
+        Self::Or => "|",
+        Self::Exp => "**",
+        Self::Question => "?",
+        Self::RightSh => ">>",
+        Self::Semicolon => ";",
+        Self::Spread => "...",
+        Self::StrictEq => "===",
+        Self::StrictNotEq => "!==",
+        Self::Sub => "-",
+        Self::URightSh => ">>>",
+        Self::Xor => "^",
       }
     )
   }
