@@ -27,8 +27,8 @@ impl Token {
   }
 
   #[inline]
-  pub fn span(&self) -> &Span {
-    &self.span
+  pub fn span(&self) -> Span {
+    self.span
   }
 }
 

@@ -1,4 +1,7 @@
 mod comment;
+mod number;
+mod spread;
+mod identifier;
 mod cursor;
 mod error;
 mod string;
@@ -10,8 +13,11 @@ mod tests;
 
 use self::{
   cursor::Cursor,
+  identifier::Identifier,
+  spread::SpreadLiteral,
   comment::{SingleLineComment, MultiLineComment},
   string::{StringLiteral},
+  number::NumberLiteral,
   operator::Operator,
 };
 use crate::syntax::ast::{Punctuator, Span};
@@ -145,6 +151,10 @@ impl<R> Lexer<R> {
         Span::new(start, self.cursor.pos()),
       )),
       '"' | '\'' => StringLiteral::new(next_chr).lex(&mut self.cursor, start),
+      _ if next_chr.is_digit(10) => NumberLiteral::new(next_chr).lex(&mut self.cursor, start),
+      _ if next_chr.is_alphabetic() || next_chr == '$' || next_chr == '_' => {
+        Identifier::new(next_chr).lex(&mut self.cursor, start)
+      }
       ';' => Ok(Token::new(
         Punctuator::Semicolon.into(),
         Span::new(start, self.cursor.pos()),
@@ -161,6 +171,7 @@ impl<R> Lexer<R> {
         Punctuator::CloseParen.into(),
         Span::new(start, self.cursor.pos())
       )),
+      '.' => SpreadLiteral::new().lex(&mut self.cursor, start),
       ',' => Ok(Token::new(
         Punctuator::Comma.into(),
         Span::new(start, self.cursor.pos())
@@ -185,9 +196,10 @@ impl<R> Lexer<R> {
         Punctuator::Question.into(),
         Span::new(start, self.cursor.pos())
       )),
+      '/' => self.lex_slash_token(start),
       '=' | '*' | '+' | '-' | '%' | '|' | '&' | '^' | '<' | '>' | '!' | '~' => {
         Operator::new(next_chr).lex(&mut self.cursor, start)
-      },
+      }
       _ => {
         let details = format!(
           "unexpected '{}' at line {}, column {}",

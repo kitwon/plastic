@@ -9,6 +9,7 @@ use std::io::{self, Bytes, Read, Error};
 pub(super) struct Cursor<R> {
   iter: InnerIter<R>,
   pos: Position,
+  strict_mode: bool,
 }
 
 impl<R> Cursor<R> {
@@ -21,7 +22,7 @@ impl<R> Cursor<R> {
   #[inline]
   pub(super) fn next_column(&mut self) {
     let current_line = self.pos.line_number();
-    let next_column = self.pos.line_number() + 1;
+    let next_column = self.pos.column_number() + 1;
     self.pos = Position::new(current_line, next_column)
   }
 
@@ -29,6 +30,16 @@ impl<R> Cursor<R> {
   fn next_line(&mut self) {
     let next_line = self.pos.line_number() + 1;
     self.pos = Position::new(next_line, 1)
+  }
+
+  #[inline]
+  pub(super) fn strict_mode(&self) -> bool {
+    self.strict_mode
+  }
+
+  #[inline]
+  pub(super) fn set_strict_mode(&mut self, strict_mode: bool)  {
+    self.strict_mode = strict_mode
   }
 }
 
@@ -42,6 +53,7 @@ impl<R> Cursor<R>
     Self {
       iter: InnerIter::new(inner.bytes()),
       pos: Position::new(1, 1),
+      strict_mode: false
     }
   }
 
@@ -75,6 +87,24 @@ impl<R> Cursor<R>
     } else {
       false
     })
+  }
+
+  /// Fills the buffer whit characters until the first character (x) for which the predicate (pred) is fals
+  /// (or the next character is none).
+  ///
+  pub(super) fn take_while_pred<F>(&mut self, buf: &mut String, pred: &F) ->io::Result<()>
+    where
+      F: Fn(char) -> bool,
+  {
+    loop {
+      if !self.next_is_pred(pred)? {
+        return Ok(());
+      } else if let Some(ch) = self.next_char()? {
+        buf.push(ch);
+      } else {
+        unreachable!();
+      }
+    }
   }
 
   pub(crate) fn next_char(&mut self) -> Result<Option<char>, Error> {
