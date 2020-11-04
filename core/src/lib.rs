@@ -1,8 +1,11 @@
 // use crate::syntax::lexer::Lexer;
 
 pub mod syntax;
+pub mod exec;
+pub mod context;
 
-pub fn exec(src: String) -> String {
+#[cfg(test)]
+pub(crate) fn exec(src: &str) -> String {
   // let mut lexer = Lexer::new(&src);
-  src
+  String::from(src)
 }

@@ -89,7 +89,7 @@ impl<R> Cursor<R>
     })
   }
 
-  /// Fills the buffer whit characters until the first character (x) for which the predicate (pred) is fals
+  /// Fills the buffer whit characters until the first character (x) for which the predicate (pred) is false
   /// (or the next character is none).
   ///
   pub(super) fn take_while_pred<F>(&mut self, buf: &mut String, pred: &F) ->io::Result<()>

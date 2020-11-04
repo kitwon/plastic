@@ -1,4 +1,5 @@
 use super::*;
+use super::token::Numeric;
 use crate::syntax::ast::Keyword;
 
 fn span(start: (u32, u32), end: (u32, u32)) -> Span {
@@ -297,6 +298,83 @@ fn numbers() {
         TokenKind::numeric_literal(0.12),
         TokenKind::Punctuator(Punctuator::Sub),
         TokenKind::numeric_literal(32),
+    ];
+
+    expect_tokens(&mut lexer, &expected);
+}
+
+#[test]
+fn big_exp_numbers() {
+    let mut lexer = Lexer::new(&b"1.0e25 1.0e36 9.0e50"[..]);
+
+    let expected = [
+        TokenKind::numeric_literal(10000000000000000000000000.0),
+        TokenKind::numeric_literal(1000000000000000000000000000000000000.0),
+        TokenKind::numeric_literal(900000000000000000000000000000000000000000000000000.0),
+    ];
+
+    expect_tokens(&mut lexer, &expected);
+}
+
+#[test]
+#[ignore]
+fn big_literal_numbers() {
+    let mut lexer = Lexer::new(&b"10000000000000000000000000"[..]);
+
+    let expected = [TokenKind::numeric_literal(10000000000000000000000000.0)];
+
+    expect_tokens(&mut lexer, &expected);
+}
+
+#[test]
+fn sigle_number_without_semicolon() {
+  let mut lexer = Lexer::new(&b"1"[..]);
+  if let Some(x) = lexer.next().unwrap() {
+    assert_eq!(x.kind(), &TokenKind::numeric_literal(Numeric::Integer(1)))
+  } else {
+    panic!("Failed to lex 1 without semicolon")
+  }
+}
+
+#[test]
+fn take_while_pred_simple() {
+  let mut cur = Cursor::new(&b"abcdefghijk"[..]);
+  let mut buf: String = String::new();
+
+  cur.take_while_pred(&mut buf, &|c| c == 'a' || c == 'b' || c == 'c').unwrap();
+  assert_eq!(buf, "abc");
+}
+
+#[test]
+fn take_while_immediate_stop() {
+  let mut cur = Cursor::new(&b"abcdefghijk"[..]);
+  let mut buf: String = String::new();
+
+  cur.take_while_pred(&mut buf, &|c| c == 'd').unwrap();
+  assert_eq!(buf, "");
+}
+
+#[test]
+fn take_while_pred_entire_str() {
+  let mut cur = Cursor::new(&b"abcdefghijk"[..]);
+
+  let mut buf: String = String::new();
+
+  cur.take_while_pred(&mut buf, &|c| c.is_alphabetic())
+      .unwrap();
+
+  assert_eq!(buf, "abcdefghijk");
+}
+
+#[test]
+fn non_english_str() {
+    let str = r#"'中文';"#;
+
+    let mut lexer = Lexer::new(str.as_bytes());
+
+    let expected = [
+        TokenKind::StringLiteral("中文".into()),
+        TokenKind::Punctuator(Punctuator::Semicolon),
     ];
 
     expect_tokens(&mut lexer, &expected);
